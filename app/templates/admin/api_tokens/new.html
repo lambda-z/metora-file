@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}New API Token · FileService{% endblock %}
+{% block content %}
+<div class="page-head"><h1>New API Token</h1></div>
+
+<div class="card">
+  <form method="post" action="/admin/api-tokens">
+    <label>Name</label>
+    <input type="text" name="name" required placeholder="e.g. workflow-runtime">
+
+    <label>Owner Type</label>
+    <input type="text" name="owner_type" value="system">
+
+    <label>Owner ID</label>
+    <input type="text" name="owner_id" placeholder="optional">
+
+    <label>Scopes <span class="muted">(none selected = full access)</span></label>
+    {% for scope in available_scopes %}
+    <label style="font-weight:400;">
+      <input type="checkbox" name="scopes" value="{{ scope }}"> {{ scope }}
+    </label>
+    {% endfor %}
+
+    <label>Allowed Buckets <span class="muted">(none = all)</span></label>
+    {% for bucket in buckets %}
+    <label style="font-weight:400;">
+      <input type="checkbox" name="allowed_buckets" value="{{ bucket.name }}"> {{ bucket.name }}
+    </label>
+    {% else %}
+    <p class="muted">No active buckets.</p>
+    {% endfor %}
+
+    <div style="margin-top:16px;">
+      <button type="submit">Create Token</button>
+      <a class="btn secondary" href="/admin/api-tokens">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

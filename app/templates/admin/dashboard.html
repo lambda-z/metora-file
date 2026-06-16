@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · FileService{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Dashboard</h1></div>
+
+<div class="grid">
+  <div class="stat"><div class="value">{{ bucket_count }}</div><div class="label">Buckets</div></div>
+  <div class="stat"><div class="value">{{ object_count }}</div><div class="label">Objects</div></div>
+  <div class="stat"><div class="value">{{ token_count }}</div><div class="label">API Tokens</div></div>
+  <div class="stat"><div class="value">{{ share_link_count }}</div><div class="label">Share Links</div></div>
+</div>
+
+<div class="card">
+  <h2>Recent uploads</h2>
+  <table>
+    <thead><tr><th>Filename</th><th>Bucket</th><th>Size</th><th>Created</th><th></th></tr></thead>
+    <tbody>
+      {% for obj in recent_objects %}
+      <tr>
+        <td>{{ obj.filename or obj.object_key }}</td>
+        <td>{{ obj.bucket_name }}</td>
+        <td>{{ obj.size }}</td>
+        <td class="muted">{{ obj.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+        <td><a href="/admin/objects/{{ obj.id }}">Detail</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="muted">No uploads yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h2>Recent audit logs</h2>
+  <table>
+    <thead><tr><th>Action</th><th>Target</th><th>Actor</th><th>When</th></tr></thead>
+    <tbody>
+      {% for log in recent_audits %}
+      <tr>
+        <td>{{ log.action }}</td>
+        <td class="muted">{{ log.target_type }}:{{ log.target_id }}</td>
+        <td class="muted">{{ log.actor_id or log.actor_type or "-" }}</td>
+        <td class="muted">{{ log.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="muted">No audit logs yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

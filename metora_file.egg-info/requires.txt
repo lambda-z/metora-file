@@ -1,0 +1,14 @@
+fastapi>=0.110
+uvicorn[standard]>=0.27
+beanie>=1.26
+motor>=3.4
+pydantic-settings>=2.2
+jinja2>=3.1.4
+python-multipart>=0.0.9
+minio>=7.2
+bcrypt>=4.1
+
+[dev]
+pytest>=8.0
+pytest-asyncio>=0.23
+ruff>=0.4

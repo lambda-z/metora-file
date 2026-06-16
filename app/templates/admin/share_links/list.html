@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Share Links · FileService{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Share Links</h1></div>
+
+<div class="card">
+  <table>
+    <thead>
+      <tr><th>Object</th><th>Visibility</th><th>Permission</th><th>Status</th><th>Access</th><th>Expires</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for link in share_links %}
+      {% set obj = object_map.get(link.object_id | string) %}
+      <tr>
+        <td>
+          {% if obj %}<a href="/admin/objects/{{ obj.id }}">{{ obj.filename or obj.object_key }}</a>
+          {% else %}<span class="muted">{{ link.object_id }}</span>{% endif %}
+        </td>
+        <td><span class="badge {{ link.visibility.value }}">{{ link.visibility.value }}</span></td>
+        <td>{{ link.permission.value }}</td>
+        <td><span class="badge {{ link.status.value }}">{{ link.status.value }}</span></td>
+        <td class="muted">{{ link.access_count }}{% if link.max_access_count %}/{{ link.max_access_count }}{% endif %}</td>
+        <td class="muted">{% if link.expires_at %}{{ link.expires_at.strftime("%Y-%m-%d %H:%M") }}{% else %}never{% endif %}</td>
+        <td>
+          {% if link.status.value == "active" %}
+          <form class="inline" method="post" action="/admin/share-links/{{ link.id }}/disable"
+                data-confirm="Disable this share link?">
+            <button class="danger" type="submit">Disable</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="muted">No share links yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

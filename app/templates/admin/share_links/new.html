@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}New Share Link · FileService{% endblock %}
+{% block content %}
+<div class="page-head"><h1>New Share Link</h1></div>
+<p class="muted">For object: {{ object.filename or object.object_key }}</p>
+
+<div class="card">
+  <form method="post" action="/admin/objects/{{ object.id }}/share-links">
+    <label>Visibility</label>
+    <select name="visibility">
+      <option value="public">Public</option>
+      <option value="private">Private (password required)</option>
+    </select>
+
+    <label>Permission</label>
+    <select name="permission">
+      <option value="preview">Preview</option>
+      <option value="download">Download</option>
+    </select>
+
+    <label>Password <span class="muted">(required for private)</span></label>
+    <input type="password" name="password">
+
+    <label>Expires At</label>
+    <input type="datetime-local" name="expires_at">
+
+    <label style="font-weight:400;">
+      <input type="checkbox" name="allow_preview" value="true" checked> Allow Preview
+    </label>
+    <label style="font-weight:400;">
+      <input type="checkbox" name="allow_download" value="true"> Allow Download
+    </label>
+
+    <label>Max Access Count</label>
+    <input type="number" name="max_access_count" min="1" placeholder="optional">
+
+    <div style="margin-top:16px;">
+      <button type="submit">Create Share Link</button>
+      <a class="btn secondary" href="/admin/objects/{{ object.id }}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

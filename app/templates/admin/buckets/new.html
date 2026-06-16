@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}New Bucket · FileService{% endblock %}
+{% block content %}
+<div class="page-head"><h1>New Bucket</h1></div>
+
+<div class="card">
+  <form method="post" action="/admin/buckets">
+    <label>Name</label>
+    <input type="text" name="name" required placeholder="e.g. contracts">
+
+    <label>Display Name</label>
+    <input type="text" name="display_name" placeholder="optional">
+
+    <label>Visibility</label>
+    <select name="visibility">
+      <option value="private">private</option>
+      <option value="public">public</option>
+    </select>
+
+    <label>Storage Backend</label>
+    <select name="storage_backend">
+      <option value="minio">minio</option>
+      <option value="local">local</option>
+    </select>
+
+    <div style="margin-top:16px;">
+      <button type="submit">Create Bucket</button>
+      <a class="btn secondary" href="/admin/buckets">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

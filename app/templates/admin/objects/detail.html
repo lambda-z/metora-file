@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}{{ object.filename or object.object_key }} · FileService{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>{{ object.filename or object.object_key }}</h1>
+  <span class="badge {{ object.status.value }}">{{ object.status.value }}</span>
+</div>
+
+{% if signed_url %}
+<div class="card">
+  <div class="alert alert-success">Signed URL generated (time-limited):</div>
+  <div class="token-box">{{ signed_url }}</div>
+  <a class="btn" href="{{ signed_url }}" target="_blank" rel="noopener">Open</a>
+  <button type="button" data-copy="{{ signed_url }}">Copy</button>
+</div>
+{% endif %}
+
+{% if new_share_url %}
+<div class="card">
+  <div class="alert alert-success">
+    Share link created ({{ new_share_link.visibility.value }}). The URL is shown once:
+  </div>
+  <div class="token-box">{{ new_share_url }}</div>
+  <button type="button" data-copy="{{ new_share_url }}">Copy</button>
+</div>
+{% endif %}
+
+<div class="card">
+  <h2>Metadata</h2>
+  <table>
+    <tbody>
+      <tr><th>ID</th><td>{{ object.id }}</td></tr>
+      <tr><th>Bucket</th><td>{{ object.bucket_name }}</td></tr>
+      <tr><th>Object Key</th><td>{{ object.object_key }}</td></tr>
+      <tr><th>Storage Key</th><td class="muted">{{ object.storage_key }}</td></tr>
+      <tr><th>Content Type</th><td>{{ object.content_type or "-" }}</td></tr>
+      <tr><th>Size</th><td>{{ object.size }} bytes</td></tr>
+      <tr><th>Visibility</th><td>{{ object.visibility.value }}</td></tr>
+      <tr><th>Source / Owner</th><td>{{ object.source_system or "-" }} / {{ object.owner_type or "-" }}:{{ object.owner_id or "-" }}</td></tr>
+      <tr><th>Created</th><td>{{ object.created_at.strftime("%Y-%m-%d %H:%M") }}</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h2>Actions</h2>
+  <form class="inline" method="post" action="/admin/objects/{{ object.id }}/signed-url">
+    <input type="hidden" name="expires_seconds" value="300">
+    <button type="submit">Generate Signed URL</button>
+  </form>
+  <a class="btn secondary" href="/admin/objects/{{ object.id }}/share-links/new">Create Share Link</a>
+  <form class="inline" method="post" action="/admin/objects/{{ object.id }}/delete"
+        data-confirm="Soft-delete this object?">
+    <button class="danger" type="submit">Delete</button>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Versions</h2>
+  <table>
+    <thead><tr><th>Gen</th><th>Size</th><th>Created</th></tr></thead>
+    <tbody>
+      {% for v in versions %}
+      <tr><td>{{ v.generation }}</td><td>{{ v.size }}</td><td class="muted">{{ v.created_at.strftime("%Y-%m-%d %H:%M") }}</td></tr>
+      {% else %}
+      <tr><td colspan="3" class="muted">No versions.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h2>Share links</h2>
+  <table>
+    <thead><tr><th>Visibility</th><th>Permission</th><th>Status</th><th>Access</th><th></th></tr></thead>
+    <tbody>
+      {% for link in share_links %}
+      <tr>
+        <td><span class="badge {{ link.visibility.value }}">{{ link.visibility.value }}</span></td>
+        <td>{{ link.permission.value }}</td>
+        <td><span class="badge {{ link.status.value }}">{{ link.status.value }}</span></td>
+        <td class="muted">{{ link.access_count }}{% if link.max_access_count %}/{{ link.max_access_count }}{% endif %}</td>
+        <td>
+          {% if link.status.value == "active" %}
+          <form class="inline" method="post" action="/admin/share-links/{{ link.id }}/disable"
+                data-confirm="Disable this share link?">
+            <button class="danger" type="submit">Disable</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="muted">No share links.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

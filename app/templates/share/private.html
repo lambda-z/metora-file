@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Protected file · FileService</title>
+  <link rel="stylesheet" href="/static/css/admin.css">
+</head>
+<body>
+  <div class="share-page">
+    <div class="card">
+      <h1>Password required</h1>
+      <p class="muted">This file is shared privately. Enter the password to continue.</p>
+      {% if error %}<div class="alert alert-warning">{{ error }}</div>{% endif %}
+      <form method="post" action="/share/{{ token }}/verify">
+        <label>Password</label>
+        <input type="password" name="password" required autofocus>
+        <div style="margin-top:16px;"><button type="submit">Unlock</button></div>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

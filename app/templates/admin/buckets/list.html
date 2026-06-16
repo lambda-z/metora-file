@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Buckets · FileService{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Buckets</h1>
+  <a class="btn" href="/admin/buckets/new">New Bucket</a>
+</div>
+
+<div class="card">
+  <table>
+    <thead><tr><th>Name</th><th>Display</th><th>Visibility</th><th>Backend</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for bucket in buckets %}
+      <tr>
+        <td>{{ bucket.name }}</td>
+        <td class="muted">{{ bucket.display_name or "-" }}</td>
+        <td><span class="badge {{ bucket.visibility.value }}">{{ bucket.visibility.value }}</span></td>
+        <td class="muted">{{ bucket.storage_backend }}</td>
+        <td><span class="badge {{ bucket.status.value }}">{{ bucket.status.value }}</span></td>
+        <td><a href="/admin/buckets/{{ bucket.name }}">Open</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="muted">No buckets yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

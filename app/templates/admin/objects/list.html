@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Objects · FileService{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Objects</h1></div>
+
+<div class="card">
+  <form method="get" action="/admin/objects">
+    <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+      <div><label>Bucket</label><input type="text" name="bucket_name" value="{{ filters.bucket_name }}"></div>
+      <div><label>Source System</label><input type="text" name="source_system" value="{{ filters.source_system }}"></div>
+      <div><label>Owner Type</label><input type="text" name="owner_type" value="{{ filters.owner_type }}"></div>
+      <div><label>Owner ID</label><input type="text" name="owner_id" value="{{ filters.owner_id }}"></div>
+      <div><button type="submit">Filter</button></div>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <table>
+    <thead><tr><th>Filename</th><th>Bucket</th><th>Source</th><th>Owner</th><th>Size</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for obj in objects %}
+      <tr>
+        <td>{{ obj.filename or obj.object_key }}</td>
+        <td class="muted">{{ obj.bucket_name }}</td>
+        <td class="muted">{{ obj.source_system or "-" }}</td>
+        <td class="muted">{{ obj.owner_type or "-" }}{% if obj.owner_id %}:{{ obj.owner_id }}{% endif %}</td>
+        <td>{{ obj.size }}</td>
+        <td><span class="badge {{ obj.status.value }}">{{ obj.status.value }}</span></td>
+        <td><a href="/admin/objects/{{ obj.id }}">Detail</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="muted">No objects match.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

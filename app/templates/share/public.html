@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shared file · FileService</title>
+  <link rel="stylesheet" href="/static/css/admin.css">
+</head>
+<body>
+  <div class="share-page">
+    <div class="card">
+      <h1>{{ object.filename or object.object_key }}</h1>
+      <p class="muted">
+        {{ object.content_type or "file" }} · {{ object.size }} bytes
+      </p>
+      <div style="margin-top:16px;">
+        {% if share_link.allow_preview %}
+        <a class="btn" href="{{ access_url }}" target="_blank" rel="noopener">Preview</a>
+        {% endif %}
+        {% if share_link.allow_download %}
+        <a class="btn secondary" href="{{ access_url }}" download>Download</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}{{ bucket.name }} · FileService{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Bucket: {{ bucket.name }}</h1>
+  <span class="badge {{ bucket.status.value }}">{{ bucket.status.value }}</span>
+</div>
+
+<div class="card">
+  <h2>Upload file</h2>
+  <form action="/admin/buckets/{{ bucket.name }}/objects" method="post" enctype="multipart/form-data">
+    <label>File</label>
+    <input type="file" name="file" required>
+
+    <label>Object Key <span class="muted">(optional path)</span></label>
+    <input type="text" name="object_key" placeholder="optional/path/file.pdf">
+
+    <label>Visibility</label>
+    <select name="visibility">
+      <option value="private">private</option>
+      <option value="public">public</option>
+    </select>
+
+    <label>Source System</label>
+    <input type="text" name="source_system" value="admin-ui">
+
+    <label>Owner Type</label>
+    <input type="text" name="owner_type" placeholder="optional">
+
+    <label>Owner ID</label>
+    <input type="text" name="owner_id" placeholder="optional">
+
+    <div style="margin-top:16px;"><button type="submit">Upload</button></div>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Files</h2>
+  <table>
+    <thead><tr><th>Filename</th><th>Key</th><th>Size</th><th>Visibility</th><th>Created</th><th></th></tr></thead>
+    <tbody>
+      {% for obj in objects %}
+      <tr>
+        <td>{{ obj.filename or "-" }}</td>
+        <td class="muted">{{ obj.object_key }}</td>
+        <td>{{ obj.size }}</td>
+        <td><span class="badge {{ obj.visibility.value }}">{{ obj.visibility.value }}</span></td>
+        <td class="muted">{{ obj.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+        <td><a href="/admin/objects/{{ obj.id }}">Detail</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="muted">No files in this bucket.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
