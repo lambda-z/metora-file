@@ -23,7 +23,7 @@ from app.modules.buckets import service as bucket_service
 from app.modules.objects import service as object_service
 from app.modules.relations import service as relation_service
 from app.modules.share_links import service as share_service
-from app.templating import templates
+from app.templating import template_response
 
 router = APIRouter(prefix="/admin", dependencies=[Depends(require_admin)])
 
@@ -43,7 +43,7 @@ async def dashboard(request: Request):
     share_link_count = await ShareLink.find_all().count()
     recent_objects = await StoredObject.find_all().sort("-created_at").limit(10).to_list()
     recent_audits = await audit_service.recent(10)
-    return templates.TemplateResponse(
+    return template_response(
         "admin/dashboard.html",
         _ctx(
             request,
@@ -63,7 +63,7 @@ async def dashboard(request: Request):
 @router.get("/api-tokens", response_class=HTMLResponse)
 async def api_tokens(request: Request):
     tokens = await token_service.list_tokens()
-    return templates.TemplateResponse(
+    return template_response(
         "admin/api_tokens/list.html", _ctx(request, tokens=tokens)
     )
 
@@ -71,7 +71,7 @@ async def api_tokens(request: Request):
 @router.get("/api-tokens/new", response_class=HTMLResponse)
 async def new_api_token(request: Request):
     buckets = await bucket_service.get_active_buckets()
-    return templates.TemplateResponse(
+    return template_response(
         "admin/api_tokens/new.html",
         _ctx(request, buckets=buckets, available_scopes=AVAILABLE_SCOPES),
     )
@@ -95,7 +95,7 @@ async def create_api_token(
         env=settings.api_token_env,
         created_by="admin-ui",
     )
-    return templates.TemplateResponse(
+    return template_response(
         "admin/api_tokens/created.html",
         _ctx(request, token=created.token, raw_token=created.raw_token),
     )
@@ -115,12 +115,12 @@ async def revoke_api_token(token_id: str):
 @router.get("/buckets", response_class=HTMLResponse)
 async def buckets(request: Request):
     items = await bucket_service.list_buckets()
-    return templates.TemplateResponse("admin/buckets/list.html", _ctx(request, buckets=items))
+    return template_response("admin/buckets/list.html", _ctx(request, buckets=items))
 
 
 @router.get("/buckets/new", response_class=HTMLResponse)
 async def new_bucket(request: Request):
-    return templates.TemplateResponse("admin/buckets/new.html", _ctx(request))
+    return template_response("admin/buckets/new.html", _ctx(request))
 
 
 @router.post("/buckets")
@@ -149,7 +149,7 @@ async def bucket_detail(request: Request, bucket_name: str):
     if bucket is None:
         raise HTTPException(status_code=404, detail="Bucket not found")
     objects = await object_service.query_objects(bucket_name=bucket_name)
-    return templates.TemplateResponse(
+    return template_response(
         "admin/buckets/detail.html", _ctx(request, bucket=bucket, objects=objects)
     )
 
@@ -202,7 +202,7 @@ async def objects(
         owner_type=owner_type,
         owner_id=owner_id,
     )
-    return templates.TemplateResponse(
+    return template_response(
         "admin/objects/list.html",
         _ctx(
             request,
@@ -241,7 +241,7 @@ async def object_detail(request: Request, object_id: str):
     if obj is None:
         raise HTTPException(status_code=404, detail="Object not found")
     ctx = await _object_detail_context(request, obj)
-    return templates.TemplateResponse("admin/objects/detail.html", ctx)
+    return template_response("admin/objects/detail.html", ctx)
 
 
 @router.post("/objects/{object_id}/signed-url", response_class=HTMLResponse)
@@ -255,7 +255,7 @@ async def generate_signed_url(
         raise HTTPException(status_code=404, detail="Object not found")
     url = await object_service.generate_signed_url(obj=obj, expires_seconds=expires_seconds)
     ctx = await _object_detail_context(request, obj, signed_url=url)
-    return templates.TemplateResponse("admin/objects/detail.html", ctx)
+    return template_response("admin/objects/detail.html", ctx)
 
 
 @router.post("/objects/{object_id}/delete")
@@ -278,7 +278,7 @@ async def share_links(request: Request):
         await StoredObject.find({"_id": {"$in": object_ids}}).to_list() if object_ids else []
     )
     object_map = {str(obj.id): obj for obj in objects}
-    return templates.TemplateResponse(
+    return template_response(
         "admin/share_links/list.html",
         _ctx(request, share_links=links, object_map=object_map),
     )
@@ -289,7 +289,7 @@ async def new_share_link(request: Request, object_id: str):
     obj = await object_service.get_object(object_id)
     if obj is None:
         raise HTTPException(status_code=404, detail="Object not found")
-    return templates.TemplateResponse(
+    return template_response(
         "admin/share_links/new.html", _ctx(request, object=obj)
     )
 
@@ -340,7 +340,7 @@ async def create_share_link(
         new_share_link=created.share_link,
         new_share_url=share_url,
     )
-    return templates.TemplateResponse("admin/objects/detail.html", ctx)
+    return template_response("admin/objects/detail.html", ctx)
 
 
 @router.post("/share-links/{share_id}/disable")

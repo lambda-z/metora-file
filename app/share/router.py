@@ -9,7 +9,7 @@ from app.modules.objects import service as object_service
 from app.modules.share_links import service as share_service
 from app.storage import get_storage_backend
 from app.storage.signing import verify_signature
-from app.templating import templates
+from app.templating import template_response
 
 router = APIRouter()
 
@@ -76,7 +76,7 @@ async def share_entry(request: Request, token: str):
         raise HTTPException(status_code=404, detail="Share link not found")
 
     if share_link.visibility.value == "private" and share_link.password_hash:
-        return templates.TemplateResponse(
+        return template_response(
             "share/private.html", {"request": request, "token": token}
         )
 
@@ -85,7 +85,7 @@ async def share_entry(request: Request, token: str):
     except share_service.ShareLinkError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
 
-    return templates.TemplateResponse(
+    return template_response(
         "share/public.html",
         {
             "request": request,
@@ -100,12 +100,12 @@ async def share_entry(request: Request, token: str):
 async def verify_private(request: Request, token: str, password: str = Form(...)):
     result = await share_service.verify_private_share(raw_token=token, password=password)
     if result is None:
-        return templates.TemplateResponse(
+        return template_response(
             "share/private.html",
             {"request": request, "token": token, "error": "Invalid password"},
             status_code=401,
         )
-    return templates.TemplateResponse(
+    return template_response(
         "share/verified.html",
         {
             "request": request,
