@@ -39,6 +39,19 @@ class Settings(BaseSettings):
     signing_secret: str = "change-me-in-production"
     api_token_env: str = "live"
 
+    # CORS: comma-separated origins allowed to call the API / direct-upload
+    # endpoints from a browser. Defaults to "*" (any origin) so browser direct
+    # uploads (PUT /files/{key}) work from any frontend host. Set to an explicit
+    # comma-separated list in production.
+    cors_allow_origins: str = "*"
+
+    @property
+    def cors_allow_origin_list(self) -> list[str]:
+        raw = (self.cors_allow_origins or "").strip()
+        if raw in ("", "*"):
+            return ["*"]
+        return [origin.strip() for origin in raw.split(",") if origin.strip()]
+
 
 @lru_cache
 def get_settings() -> Settings:

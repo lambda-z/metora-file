@@ -51,6 +51,27 @@ class LocalBackend(StorageBackend):
             params["filename"] = filename
         return f"{self._base_url}/files/{quote(key)}?{urlencode(params)}"
 
+    def presigned_put_url(
+        self, *, key: str, expires: int = 300, content_type: str | None = None
+    ) -> dict:
+        expires_at, signature = make_signed_query(key, expires, action="put")
+        params = {"expires": expires_at, "sig": signature}
+        url = f"{self._base_url}/files/{quote(key)}?{urlencode(params)}"
+        headers = {}
+        if content_type:
+            headers["Content-Type"] = content_type
+        return {"url": url, "method": "PUT", "headers": headers}
+
+    def stat_object(self, *, key: str) -> dict:
+        target = self._path_for(key)
+        if not target.exists():
+            raise FileNotFoundError(key)
+        data = target.read_bytes()
+        return {
+            "size": target.stat().st_size,
+            "etag": hashlib.md5(data).hexdigest(),  # noqa: S324 - etag only, not security
+        }
+
     def delete(self, *, key: str) -> None:
         try:
             self._path_for(key).unlink()

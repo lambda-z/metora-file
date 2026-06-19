@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from urllib.parse import quote
 
 from fastapi import (
     APIRouter,
@@ -23,6 +24,7 @@ from app.modules.buckets import service as bucket_service
 from app.modules.objects import service as object_service
 from app.modules.relations import service as relation_service
 from app.modules.share_links import service as share_service
+from app.storage import normalize_folder
 from app.templating import template_response
 
 router = APIRouter(prefix="/admin", dependencies=[Depends(require_admin)])
@@ -144,13 +146,57 @@ async def create_bucket(
 
 
 @router.get("/buckets/{bucket_name}", response_class=HTMLResponse)
-async def bucket_detail(request: Request, bucket_name: str):
+async def bucket_detail(request: Request, bucket_name: str, folder: str = ""):
     bucket = await bucket_service.get_by_name(bucket_name)
     if bucket is None:
         raise HTTPException(status_code=404, detail="Bucket not found")
-    objects = await object_service.query_objects(bucket_name=bucket_name)
+    current_folder = normalize_folder(folder)
+    objects = await object_service.query_objects(
+        bucket_name=bucket_name, folder=current_folder
+    )
+    subfolders = await object_service.list_folders(
+        bucket_name=bucket_name, parent=current_folder
+    )
+    # Breadcrumb segments: [(name, full_path), ...] for the current folder path.
+    crumbs: list[tuple[str, str]] = []
+    if current_folder:
+        acc = ""
+        for seg in current_folder.split("/"):
+            acc = f"{acc}/{seg}" if acc else seg
+            crumbs.append((seg, acc))
+    parent_folder = current_folder.rsplit("/", 1)[0] if "/" in current_folder else ""
     return template_response(
-        "admin/buckets/detail.html", _ctx(request, bucket=bucket, objects=objects)
+        "admin/buckets/detail.html",
+        _ctx(
+            request,
+            bucket=bucket,
+            objects=objects,
+            subfolders=subfolders,
+            current_folder=current_folder,
+            parent_folder=parent_folder,
+            crumbs=crumbs,
+        ),
+    )
+
+
+@router.post("/buckets/{bucket_name}/folders")
+async def create_folder(
+    bucket_name: str,
+    name: str = Form(...),
+    parent: str | None = Form(None),
+):
+    bucket = await bucket_service.get_by_name(bucket_name)
+    if bucket is None:
+        raise HTTPException(status_code=404, detail="Bucket not found")
+    try:
+        new_folder = await object_service.create_folder(
+            bucket_name=bucket_name, name=name, parent=parent or None
+        )
+    except object_service.ObjectError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return RedirectResponse(
+        url=f"/admin/buckets/{bucket_name}?folder={quote(new_folder)}",
+        status_code=303,
     )
 
 
@@ -159,6 +205,7 @@ async def upload_object(
     bucket_name: str,
     file: UploadFile = File(...),
     object_key: str | None = Form(None),
+    folder: str | None = Form(None),
     visibility: str = Form("private"),
     source_system: str | None = Form("admin-ui"),
     owner_type: str | None = Form(None),
@@ -169,12 +216,13 @@ async def upload_object(
         raise HTTPException(status_code=404, detail="Bucket not found")
     data = await file.read()
     # Reuse ObjectService — no upload logic is duplicated in the router.
-    await object_service.upload_object(
+    obj = await object_service.upload_object(
         bucket=bucket,
         data=data,
         filename=file.filename or "file",
         content_type=file.content_type,
         object_key=object_key or None,
+        folder=folder or None,
         visibility=visibility,
         source_system=source_system,
         owner_type=owner_type or None,
@@ -182,7 +230,11 @@ async def upload_object(
         uploader_type="admin",
         uploader_id="admin-ui",
     )
-    return RedirectResponse(url=f"/admin/buckets/{bucket_name}", status_code=303)
+    # Return to the folder the file landed in.
+    target = f"/admin/buckets/{bucket_name}"
+    if obj.folder:
+        target = f"{target}?folder={quote(obj.folder)}"
+    return RedirectResponse(url=target, status_code=303)
 
 
 # --------------------------------------------------------------------------- #

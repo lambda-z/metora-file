@@ -18,6 +18,11 @@ class StoredObject(Document):
     object_key: str
     storage_key: str
 
+    # Bucket-relative folder path (normalised, e.g. "images/2024"); "" = root.
+    folder: str = ""
+    # Virtual folder marker (no bytes); created so an empty folder persists.
+    is_placeholder: bool = False
+
     filename: str | None = None
     content_type: str | None = None
     size: int = 0
@@ -45,6 +50,9 @@ class StoredObject(Document):
         indexes = [
             pymongo.IndexModel(
                 [("bucket_name", pymongo.ASCENDING), ("object_key", pymongo.ASCENDING)],
+            ),
+            pymongo.IndexModel(
+                [("bucket_name", pymongo.ASCENDING), ("folder", pymongo.ASCENDING)],
             ),
             "status",
             "source_system",

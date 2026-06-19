@@ -58,5 +58,27 @@ class MinioBackend(StorageBackend):
             response_headers=extra,
         )
 
+    def presigned_put_url(
+        self, *, key: str, expires: int = 300, content_type: str | None = None
+    ) -> dict:
+        url = self._client.presigned_put_object(
+            self._bucket,
+            key,
+            expires=timedelta(seconds=expires),
+        )
+        headers = {}
+        if content_type:
+            headers["Content-Type"] = content_type
+        return {"url": url, "method": "PUT", "headers": headers}
+
+    def stat_object(self, *, key: str) -> dict:
+        from minio.error import S3Error
+
+        try:
+            stat = self._client.stat_object(self._bucket, key)
+        except S3Error as exc:  # object missing / not yet uploaded
+            raise FileNotFoundError(key) from exc
+        return {"size": stat.size, "etag": getattr(stat, "etag", None)}
+
     def delete(self, *, key: str) -> None:
         self._client.remove_object(self._bucket, key)

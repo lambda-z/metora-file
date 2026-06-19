@@ -7,41 +7,55 @@
 </div>
 
 <div class="card">
-  <h2>Upload file</h2>
-  <form action="/admin/buckets/{{ bucket.name }}/objects" method="post" enctype="multipart/form-data">
-    <label>File</label>
-    <input type="file" name="file" required>
+  <div class="toolbar">
+    <nav class="breadcrumb">
+      <a href="/admin/buckets/{{ bucket.name }}">▣ {{ bucket.name }}</a>
+      {% for name, path in crumbs %}
+        <span class="sep">/</span>
+        <a href="/admin/buckets/{{ bucket.name }}?folder={{ path | urlencode }}">{{ name }}</a>
+      {% endfor %}
+    </nav>
+    <div class="toolbar-actions">
+      <button type="button" class="secondary" data-modal-open="new-folder-modal">+ New Folder</button>
+      <button type="button" data-modal-open="upload-modal">⬆ Upload File</button>
+    </div>
+  </div>
 
-    <label>Object Key <span class="muted">(optional path)</span></label>
-    <input type="text" name="object_key" placeholder="optional/path/file.pdf">
-
-    <label>Visibility</label>
-    <select name="visibility">
-      <option value="private">private</option>
-      <option value="public">public</option>
-    </select>
-
-    <label>Source System</label>
-    <input type="text" name="source_system" value="admin-ui">
-
-    <label>Owner Type</label>
-    <input type="text" name="owner_type" placeholder="optional">
-
-    <label>Owner ID</label>
-    <input type="text" name="owner_id" placeholder="optional">
-
-    <div style="margin-top:16px;"><button type="submit">Upload</button></div>
-  </form>
+  <table>
+    <thead><tr><th>Folder</th><th></th></tr></thead>
+    <tbody>
+      {% if current_folder %}
+      <tr>
+        <td>
+          <a href="/admin/buckets/{{ bucket.name }}{% if parent_folder %}?folder={{ parent_folder | urlencode }}{% endif %}">../</a>
+        </td>
+        <td class="muted">parent</td>
+      </tr>
+      {% endif %}
+      {% for sub in subfolders %}
+      {% set child = (current_folder ~ "/" ~ sub) if current_folder else sub %}
+      <tr>
+        <td>📁 <a href="/admin/buckets/{{ bucket.name }}?folder={{ child | urlencode }}">{{ sub }}/</a></td>
+        <td></td>
+      </tr>
+      {% else %}
+      {% if not current_folder %}
+      <tr><td colspan="2" class="muted">No folders yet.</td></tr>
+      {% endif %}
+      {% endfor %}
+    </tbody>
+  </table>
 </div>
 
 <div class="card">
-  <h2>Files</h2>
+  <h2>Files{% if current_folder %} in <code>{{ current_folder }}/</code>{% endif %}</h2>
   <table>
-    <thead><tr><th>Filename</th><th>Key</th><th>Size</th><th>Visibility</th><th>Created</th><th></th></tr></thead>
+    <thead><tr><th>Filename</th><th>Folder</th><th>Key</th><th>Size</th><th>Visibility</th><th>Created</th><th></th></tr></thead>
     <tbody>
       {% for obj in objects %}
       <tr>
         <td>{{ obj.filename or "-" }}</td>
+        <td class="muted">{{ obj.folder or "/" }}</td>
         <td class="muted">{{ obj.object_key }}</td>
         <td>{{ obj.size }}</td>
         <td><span class="badge {{ obj.visibility.value }}">{{ obj.visibility.value }}</span></td>
@@ -49,9 +63,69 @@
         <td><a href="/admin/objects/{{ obj.id }}">Detail</a></td>
       </tr>
       {% else %}
-      <tr><td colspan="6" class="muted">No files in this bucket.</td></tr>
+      <tr><td colspan="7" class="muted">No files in this folder.</td></tr>
       {% endfor %}
     </tbody>
   </table>
+</div>
+
+<!-- New Folder modal -->
+<div class="modal-overlay" id="new-folder-modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="new-folder-title">
+    <div class="modal-head">
+      <h2 id="new-folder-title">New folder{% if current_folder %} in <code>{{ current_folder }}/</code>{% endif %}</h2>
+      <button type="button" class="modal-x" data-modal-close aria-label="Close">&times;</button>
+    </div>
+    <form action="/admin/buckets/{{ bucket.name }}/folders" method="post">
+      <input type="hidden" name="parent" value="{{ current_folder }}">
+      <label>Folder name</label>
+      <input type="text" name="name" placeholder="images" required autofocus>
+      <p class="muted">Created under the current path. Nested paths (e.g. <code>a/b</code>) are allowed.</p>
+      <div class="modal-actions">
+        <button type="button" class="secondary" data-modal-close>Cancel</button>
+        <button type="submit">Create</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Upload File modal -->
+<div class="modal-overlay" id="upload-modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="upload-title">
+    <div class="modal-head">
+      <h2 id="upload-title">Upload file{% if current_folder %} to <code>{{ current_folder }}/</code>{% endif %}</h2>
+      <button type="button" class="modal-x" data-modal-close aria-label="Close">&times;</button>
+    </div>
+    <form action="/admin/buckets/{{ bucket.name }}/objects" method="post" enctype="multipart/form-data">
+      <label>File</label>
+      <input type="file" name="file" required>
+
+      <label>Folder <span class="muted">(optional path under the bucket)</span></label>
+      <input type="text" name="folder" value="{{ current_folder }}" placeholder="images/2024">
+
+      <label>Object Key <span class="muted">(optional path within the folder)</span></label>
+      <input type="text" name="object_key" placeholder="optional/file.pdf">
+
+      <label>Visibility</label>
+      <select name="visibility">
+        <option value="private">private</option>
+        <option value="public">public</option>
+      </select>
+
+      <label>Source System</label>
+      <input type="text" name="source_system" value="admin-ui">
+
+      <label>Owner Type</label>
+      <input type="text" name="owner_type" placeholder="optional">
+
+      <label>Owner ID</label>
+      <input type="text" name="owner_id" placeholder="optional">
+
+      <div class="modal-actions">
+        <button type="button" class="secondary" data-modal-close>Cancel</button>
+        <button type="submit">Upload</button>
+      </div>
+    </form>
+  </div>
 </div>
 {% endblock %}

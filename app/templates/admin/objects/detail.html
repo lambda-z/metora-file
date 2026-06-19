@@ -31,6 +31,7 @@
     <tbody>
       <tr><th>ID</th><td>{{ object.id }}</td></tr>
       <tr><th>Bucket</th><td>{{ object.bucket_name }}</td></tr>
+      <tr><th>Folder</th><td>{% if object.folder %}<a href="/admin/buckets/{{ object.bucket_name }}?folder={{ object.folder | urlencode }}">{{ object.folder }}/</a>{% else %}<span class="muted">/ (root)</span>{% endif %}</td></tr>
       <tr><th>Object Key</th><td>{{ object.object_key }}</td></tr>
       <tr><th>Storage Key</th><td class="muted">{{ object.storage_key }}</td></tr>
       <tr><th>Content Type</th><td>{{ object.content_type or "-" }}</td></tr>

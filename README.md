@@ -70,6 +70,76 @@ docker run -d -p 9000:9000 -p 9001:9001 \
   minio/minio server /data --console-address ":9001"
 ```
 
+## Presigned direct upload (`/api/v1`)
+
+Clients (e.g. the metora backend) upload bytes **straight to storage** without
+proxying through this service — a two-phase flow:
+
+```
+# 1. init-upload: pre-creates a PENDING object, returns presigned PUT instructions
+POST /api/v1/buckets/{bucket}/objects/init-upload
+     {"filename": "hello.txt", "content_type": "text/plain"}
+  -> {"object_id": "...", "storage_key": "...",
+      "upload": {"url": "...", "method": "PUT", "headers": {...}, "expires_seconds": 300}}
+
+# 2. PUT the bytes to upload.url  (MinIO presigned PUT, or the signed local /files endpoint)
+PUT <upload.url>   --data-binary @hello.txt
+
+# 3. confirm-upload: verifies the body, backfills size/etag, flips object to ACTIVE
+POST /api/v1/objects/{object_id}/confirm-upload   {}
+  -> ObjectView (status="active")
+
+# Download later:
+POST /api/v1/objects/{object_id}/signed-url   (form: expires_seconds)  -> {"url": ...}
+```
+
+The legacy single-shot server-side upload (`POST /api/v1/buckets/{bucket}/objects`,
+multipart) is still available and used by the Admin UI.
+
+## Folders (virtual prefixes under a bucket)
+
+Objects can be organised into **folders** under a bucket. A folder is a virtual,
+bucket-relative path prefix (e.g. `images/2024`) — it is normalised (segments
+sanitised, `.`/`..` stripped, no leading/trailing slashes) and prefixed onto the
+object's storage key, so the **storage path and the signed download URL both
+reflect the folder**:
+
+```
+folder="images/2024" + filename="cat.png"
+  -> storage_key = "{bucket}/images/2024/{uuid}/cat.png"
+  -> download URL = .../files/{bucket}/images/2024/...
+```
+
+Pass `folder` wherever you upload:
+
+```
+# Presigned direct upload
+POST /api/v1/buckets/{bucket}/objects/init-upload
+     {"filename": "cat.png", "folder": "images/2024"}
+
+# Single-shot multipart upload (form field)
+POST /api/v1/buckets/{bucket}/objects        (form: file=..., folder=images/2024)
+```
+
+List/browse by folder (exact match; omit to list everything):
+
+```
+GET /api/v1/objects?bucket_name={bucket}&folder=images/2024
+```
+
+The Admin UI bucket page shows sub-folders and a breadcrumb trail. **Creating a
+folder and uploading a file are separate actions**, each opened from its own
+button as a modal dialog (nothing is shown until you click):
+
+- **New Folder** — `POST /admin/buckets/{bucket}/folders` (form: `name`, `parent`).
+  Folders are virtual prefixes, so to let an **empty** folder persist we insert a
+  lightweight placeholder marker (no bytes) carrying the folder path. Markers are
+  hidden from every file listing; the folder simply "exists" until you upload into
+  it. Creating a folder is idempotent.
+- **Upload File** — uploads straight into the current folder (folder pre-filled).
+
+A folder also "exists" implicitly once it contains at least one real object.
+
 ## Tests
 
 ```bash

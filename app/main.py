@@ -3,10 +3,12 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.admin.router import router as admin_router
+from app.config import settings
 from app.db.mongodb import close_mongodb, init_mongodb
 from app.modules.auth.api import router as api_token_router
 from app.modules.buckets.api import router as bucket_router
@@ -25,6 +27,21 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="FileService", version="1.0.0", lifespan=lifespan)
+
+# CORS: allow browsers on any (or configured) origin to call the API and the
+# direct-upload endpoint (PUT /files/{key}). Credentials are disabled when
+# allowing all origins, because the spec forbids `*` together with credentials
+# (our browser flows use presigned query-string signatures / bearer tokens in
+# headers, not cookies, so credentials are unnecessary).
+_cors_origins = settings.cors_allow_origin_list
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_origins,
+    allow_credentials=_cors_origins != ["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["ETag"],
+)
 
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 

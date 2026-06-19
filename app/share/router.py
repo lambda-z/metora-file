@@ -28,6 +28,28 @@ def _stream(key: str, content_type: str | None, filename: str | None) -> Streami
 
 
 # --------------------------------------------------------------------------- #
+# Signed local upload endpoint (used by LocalBackend.presigned_put_url)
+# --------------------------------------------------------------------------- #
+@router.put("/files/{key:path}")
+async def upload_local_file(
+    key: str,
+    request: Request,
+    expires: int = Query(...),
+    sig: str = Query(...),
+):
+    if not verify_signature(key, expires, sig, action="put"):
+        raise HTTPException(status_code=403, detail="Invalid or expired signature")
+    storage = get_storage_backend()
+    data = await request.body()
+    storage.put_object(
+        key=key,
+        data=data,
+        content_type=request.headers.get("content-type"),
+    )
+    return {"ok": True, "size": len(data)}
+
+
+# --------------------------------------------------------------------------- #
 # Signed local download endpoint (used by LocalBackend.get_download_url)
 # --------------------------------------------------------------------------- #
 @router.get("/files/{key:path}")

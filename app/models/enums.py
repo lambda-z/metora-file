@@ -14,6 +14,7 @@ class BucketVisibility(str, Enum):
 
 
 class ObjectStatus(str, Enum):
+    PENDING = "pending"
     ACTIVE = "active"
     DELETED = "deleted"
 

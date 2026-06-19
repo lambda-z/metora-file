@@ -4,19 +4,22 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}FileService Admin{% endblock %}</title>
-  <link rel="stylesheet" href="/static/css/admin.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="/static/css/admin.css?v={{ asset_version() }}">
   <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
-  <script src="/static/js/admin.js" defer></script>
+  <script src="/static/js/admin.js?v={{ asset_version() }}" defer></script>
 </head>
 <body>
   <aside class="sidebar">
-    <div class="brand">FileService</div>
+    <div class="brand"><span class="brand-mark">◈</span> FileService</div>
     <nav>
-      <a href="/admin">Dashboard</a>
-      <a href="/admin/api-tokens">API Tokens</a>
-      <a href="/admin/buckets">Buckets</a>
-      <a href="/admin/objects">Objects</a>
-      <a href="/admin/share-links">Share Links</a>
+      <a href="/admin"{% if request.url.path == "/admin" %} class="active"{% endif %}><span class="nav-ico">▦</span> Dashboard</a>
+      <a href="/admin/api-tokens"{% if "/admin/api-tokens" in request.url.path %} class="active"{% endif %}><span class="nav-ico">⚷</span> API Tokens</a>
+      <a href="/admin/buckets"{% if "/admin/buckets" in request.url.path %} class="active"{% endif %}><span class="nav-ico">▣</span> Buckets</a>
+      <a href="/admin/objects"{% if "/admin/objects" in request.url.path %} class="active"{% endif %}><span class="nav-ico">◰</span> Objects</a>
+      <a href="/admin/share-links"{% if "/admin/share-links" in request.url.path %} class="active"{% endif %}><span class="nav-ico">↗</span> Share Links</a>
     </nav>
   </aside>
 
